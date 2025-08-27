@@ -1,3 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Purchase System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        header h1 {
+            font-size: 28px;
+            color: #007bff;
+            margin: 0;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-info input[type="email"], .user-info button {
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .user-info button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .user-info button:hover {
+            background-color: #0056b3;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tabs button {
+            padding: 12px 20px;
+            border: none;
+            background-color: #e9ecef;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+            color: #555;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .tabs button.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .tabs button:hover:not(.active) {
+            background-color: #dee2e6;
+        }
+        .content-area {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 0 8px 8px 8px;
+            border: 1px solid #ddd;
+        }
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #eee;
+            align-items: center;
+        }
+        .input-row input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .input-row button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .input-row button:hover {
+            background-color: #218838;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+            white-space: nowrap; /* Prevents text wrap in headers */
+        }
+        table td {
+            background-color: #fff;
+            word-break: break-word; /* Allows long text to wrap */
+        }
+        .total-amount {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .action-buttons button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: background-color 0.2s, color 0.2s;
+            white-space: nowrap;
+        }
+        .action-buttons .view-btn { background-color: #6c757d; color: white; }
+        .action-buttons .view-btn:hover { background-color: #5a6268; }
+        .action-buttons .export-btn { background-color: #17a2b8; color: white; }
+        .action-buttons .export-btn:hover { background-color: #138496; }
+        .action-buttons .audit-btn { background-color: #ffc107; color: #333; }
+        .action-buttons .audit-btn:hover { background-color: #e0a800; }
+        .action-buttons .archive-btn { background-color: #dc3545; color: white; }
+        .action-buttons .archive-btn:hover { background-color: #c82333; }
 
+        .collaboration-status {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+        .collaboration-status span {
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>采购清单协作系统 (Firebase实时同步)</h1>
+            <div class="user-info">
+                <span>添加加入邮箱 | Email:</span>
+                <input id="inviteEmail" type="email" placeholder="someone@example.com">
+                <button id="joinBtn">加入协作 | Join</button>
+                <span id="currentUser">当前用户: 未登录</span>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="active">当前采购清单 | Current Purchase List</button>
+            <button>已归档采购单 | Archived Lists</button>
+        </div>
+
+        <div class="content-area">
+            <div class="input-row">
+                <input id="fillerInput" type="text" placeholder="填写人 | Filler">
+                <input id="productNameInput" type="text" placeholder="商品名称 | Product Name">
+                <input id="quantityInput" type="text" placeholder="数量 | Quantity">
+                <input id="unitPriceInput" type="text" placeholder="单价 | Unit Price">
+                <input id="productLinkInput" type="text" placeholder="商品链接 | Product Link">
+                <input id="notesInput" type="text" placeholder="备注 | Notes">
+                <input id="adderEmailInput" type="email" placeholder="添加人邮箱 | Email">
+                <button id="addBtn">添加 | Add</button>
+            </div>
+
+            <table id="itemsTable">
+                <thead>
+                    <tr>
+                        <th>填写人 | Filler</th>
+                        <th>商品名称 | Product Name</th>
+                        <th>数量 | Quantity</th>
+                        <th>单价 | Unit Price</th>
+                        <th>总价 | Total Price</th>
+                        <th>商品链接 | Product Link</th>
+                        <th>优先级 | Priority</th>
+                        <th>备注 | Notes</th>
+                        <th>添加人邮箱 | Email</th>
+                        <th>操作 | Action</th>
+                    </tr>
+                </thead>
+                <tbody id="itemsTbody">
+                </tbody>
+            </table>
+
+            <div class="total-amount">
+                总金额 | Total: <span id="totalAmount">8000.00</span> 元
+            </div>
+
+            <div class="collaboration-status">
+                周期开始 | Period Start: <span id="periodStart">—</span> 下次归档 | Next Archive: <span id="nextArchive">—</span>
+            </div>
+
+            <div class="action-buttons">
+                <button id="viewArchivedBtn" class="view-btn">查看历史采购列表 | View Archived Lists</button>
+                <button id="exportBtn" class="export-btn">导出采购单 | Export to Excel</button>
+                <button id="auditBtn" class="audit-btn">审核历史采购单 | Audit Archived List</button>
+                <button id="archiveBtn" class="archive-btn">立即归档 | Archive Now</button>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+    // Firebase v10+ modular SDK via CDN
+    // 1) Replace the config below with your Firebase project config
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const currentUserSpan = document.getElementById('currentUser');
+    const addBtn = document.getElementById('addBtn');
+    const itemsTbody = document.getElementById('itemsTbody');
+    const totalAmountSpan = document.getElementById('totalAmount');
+    const archiveBtn = document.getElementById('archiveBtn');
+    const itemsTable = document.getElementById('itemsTable');
+
+    const fillerInput = document.getElementById('fillerInput');
+    const productNameInput = document.getElementById('productNameInput');
+    const quantityInput = document.getElementById('quantityInput');
+    const unitPriceInput = document.getElementById('unitPriceInput');
+    const productLinkInput = document.getElementById('productLinkInput');
+    const notesInput = document.getElementById('notesInput');
+    const adderEmailInput = document.getElementById('adderEmailInput');
+
+    // 2) Anonymous auth for simple per-user tracking
+    signInAnonymously(auth).catch(console.error);
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUserSpan.textContent = `当前用户: ${user.uid}`;
+        } else {
+            currentUserSpan.textContent = '当前用户: 未登录';
+        }
+    });
+
+    // Helpers
+    function parseNumberOrZero(value) {
+        const n = Number(String(value).replace(/,/g, '').trim());
+        return Number.isFinite(n) ? n : 0;
+    }
+
+    function renderRows(docs) {
+        let html = '';
+        let total = 0;
+        docs.forEach((d) => {
+            const item = d.data();
+            const qty = parseNumberOrZero(item.quantity);
+            const price = parseNumberOrZero(item.unitPrice);
+            const rowTotal = qty * price;
+            total += rowTotal;
+            const safeLink = item.productLink ? String(item.productLink) : '';
+            html += `
+                <tr>
+                    <td>${item.filler || ''}</td>
+                    <td>${item.productName || ''}</td>
+                    <td>${qty}</td>
+                    <td>${price.toFixed(2)}</td>
+                    <td>${rowTotal.toFixed(2)}</td>
+                    <td>${safeLink ? `<a href="${safeLink}" target="_blank">Link</a>` : ''}</td>
+                    <td>${item.priority || ''}</td>
+                    <td>${item.notes || ''}</td>
+                    <td>${item.adderEmail || ''}</td>
+                    <td>
+                        <button data-action="delete" data-id="${d.id}">Delete</button>
+                    </td>
+                </tr>`;
+        });
+        itemsTbody.innerHTML = html;
+        totalAmountSpan.textContent = total.toFixed(2);
+    }
+
+    // 3) Realtime listener
+    const itemsRef = collection(db, 'purchase_items');
+    const itemsQuery = query(itemsRef, orderBy('createdAt'));
+    onSnapshot(itemsQuery, (snapshot) => {
+        renderRows(snapshot.docs);
+    });
+
+    // 4) Add item
+    addBtn.addEventListener('click', async () => {
+        const quantity = parseNumberOrZero(quantityInput.value);
+        const unitPrice = parseNumberOrZero(unitPriceInput.value);
+        const item = {
+            filler: fillerInput.value.trim(),
+            productName: productNameInput.value.trim(),
+            quantity,
+            unitPrice,
+            productLink: productLinkInput.value.trim(),
+            priority: '',
+            notes: notesInput.value.trim(),
+            adderEmail: adderEmailInput.value.trim(),
+            createdAt: serverTimestamp()
+        };
+        try {
+            await addDoc(itemsRef, item);
+            [fillerInput, productNameInput, quantityInput, unitPriceInput, productLinkInput, notesInput, adderEmailInput].forEach(el => el.value = '');
+        } catch (err) {
+            console.error(err);
+            alert('添加失败，请稍后重试');
+        }
+    });
+
+    // 5) Delete via event delegation
+    itemsTable.addEventListener('click', async (e) => {
+        const target = e.target;
+        if (target && target.getAttribute && target.getAttribute('data-action') === 'delete') {
+            const id = target.getAttribute('data-id');
+            if (!id) return;
+            if (!confirm('确认删除该条目？')) return;
+            try {
+                await deleteDoc(doc(db, 'purchase_items', id));
+            } catch (err) {
+                console.error(err);
+                alert('删除失败');
+            }
+        }
+    });
+
+    // 6) Archive: move current items to archives collection then clear
+    archiveBtn.addEventListener('click', async () => {
+        if (!confirm('确认将当前清单归档并清空？')) return;
+        try {
+            const snapshot = await getDocs(itemsRef);
+            const now = new Date();
+            const archivedAt = now.toISOString();
+            const tasks = [];
+            snapshot.forEach((d) => {
+                const data = d.data();
+                tasks.push(addDoc(collection(db, 'archives'), {
+                    ...data,
+                    originalId: d.id,
+                    archivedAt
+                }));
+                tasks.push(deleteDoc(doc(db, 'purchase_items', d.id)));
+            });
+            await Promise.all(tasks);
+            alert('已归档并清空当前清单');
+        } catch (err) {
+            console.error(err);
+            alert('归档失败');
+        }
+    });
+
+    // 7) Period info example (client-side only)
+    const periodStartEl = document.getElementById('periodStart');
+    const nextArchiveEl = document.getElementById('nextArchive');
+    const start = new Date();
+    periodStartEl.textContent = start.toISOString().slice(0,10);
+    const next = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000);
+    nextArchiveEl.textContent = next.toISOString().slice(0,10);
+    </script>
+</body>
+</html>
 
 
